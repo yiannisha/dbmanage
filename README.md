@@ -1,2 +1,2 @@
-# Python-Database-Manager
-A database manager written fully written in Python.
+# DBmanage
+A single cli tool to manage all of your databases.
