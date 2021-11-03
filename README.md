@@ -1,2 +1,2 @@
 # DBmanage
-A single cli tool to manage all of your databases.
+A single python package to manage all of your databases.
