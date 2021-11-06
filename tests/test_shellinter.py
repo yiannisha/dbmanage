@@ -1,7 +1,7 @@
 
 """ A module to test the shellinter module """
 
-import shellinter
+from dbmanage import shellinter
 
 import subprocess
 from subprocess import PIPE
@@ -29,19 +29,20 @@ class Test(unittest.TestCase):
             {
                 'process' : self.psql_process,
                 'test_quaries' : ['select datname from pg_database;\n'],
-                'login' : 'psql -h localhost',
-                'type' : 'psql',
+                'login' : 'psql -h localhost\n',
+                'logging_cmd' : (r'\out {}\n', r'\out\n'),
             },
             {
                 'process' : self.mysql_process,
                 'test_quaries' : ['select DATABASE();\n'],
                 'login' : 'mysql --login-path=local\n',
-                'type' : 'mysql',
+                'logging_cmd' : ('pager cat | tee {}', 'notee\n'),
             },
         ]
 
         for process in self.process_tests:
-                process['process'].stdin.write(process['login'])
+                # print(bytes(process['login'], 'utf-8'))
+                process['process'].stdin.write(bytes(process['login'], 'utf-8'))
 
     def test_get_stdout(self):
         """ Tests shellinter.get_stdout """
@@ -58,7 +59,7 @@ class Test(unittest.TestCase):
 
         # test output
         for test_process, known in zip(self.process_tests, known_values):
-            for process, quaries, _, type in test_process:
-                state_output = shellinter.get_stdout(process, quaries, type, capture_output=True)
-                self.assertEqual(state_output, known)
-        
+            process, quaries, _, logging_cmd = test_process.values()
+            # this test simulates passing args from a higher level object to get_stdout
+            output = shellinter.get_stdout(process, quaries, logging_cmd)
+            self.assertEqual(output, known)
