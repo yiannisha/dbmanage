@@ -3,9 +3,17 @@
 
 from dbmanage import shellinter
 
+import os
 import subprocess
 from subprocess import PIPE
+
 import unittest
+import tracemalloc
+
+tracemalloc.start()
+
+class TestProcessesNotProperlyCreated(Exception):
+    """ An exception to be raised when test processes don't behave as they should """
 
 class Test(unittest.TestCase):
 
@@ -40,10 +48,48 @@ class Test(unittest.TestCase):
             },
         ]
 
+    # DO NOT SKIP IT IS ESSENTIAL FOR SETUP
+    def test_setUp(self):
+        """ Tests for local Test.setUp """
+
+        # test processes created
+        for process in self.process_tests:
+            # make test call
+            process['process'].stdin.write(b'echo "test" > test_temp\n')
+
+            while(not os.path.isfile('test_temp')):
+                pass
+
+            with open('test_temp', 'r', encoding='utf-8') as f:
+                line = f.readline().strip()
+                if line != 'test':
+                    raise TestProcessesNotProperlyCreated(f'Wrote: {line} -> temp')
+            # delete temp file
+            if os.path.isfile('test_temp'):
+                os.remove('test_temp')
+
         for process in self.process_tests:
                 # print(bytes(process['login'], 'utf-8'))
                 process['process'].stdin.write(bytes(process['login'], 'utf-8'))
 
+    def tearDown(self):
+        """ Closes all dependencies opened during the test """
+
+        # kill remaining subprocesses
+        for process in self.process_tests:
+
+            pid = process['process'].pid
+            subprocess.run(['kill', '-9', f'{pid}'])
+            print('killed subprocesses')
+
+        # tracemalloc debugging
+        #snapshot = tracemalloc.take_snapshot()
+        #top_stats = snapshot.statistics('lineno')
+        #print('[Top 10]')
+        #for stat in top_stats[:10]:
+        #    print(stat)
+
+    @unittest.skip
     def test_get_stdout(self):
         """ Tests shellinter.get_stdout """
 
