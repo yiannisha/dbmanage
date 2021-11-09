@@ -18,11 +18,11 @@ class Test(unittest.TestCase):
     def setUp(self) -> None:
         """ Sets up tests """
 
-        # Setup credentials.json if it doesn't exist
-        creds_path = os.path.join(os.path.dirname(__file__), 'credentials.json')
+        # Setup test_credentials.json if it doesn't exist
+        creds_path = os.path.join(os.path.dirname(__file__), 'test_credentials.json')
         if not os.path.exists(creds_path):
-            psql_pass = getpass.getpass('Enter PostgreSQL password to add to credentials.json: ')
-            mysql_pass = getpass.getpass('Enter MySql password to add to credentials.json: ')
+            psql_pass = getpass.getpass('Enter PostgreSQL password to add to test_credentials.json: ')
+            mysql_pass = getpass.getpass('Enter MySql password to add to test_credentials.json: ')
 
             with open(creds_path, 'w', encoding='utf-8') as file:
                 file.write(json.dumps({'PSQL_PASS': psql_pass, 'MYSQL_PASS': mysql_pass}))
