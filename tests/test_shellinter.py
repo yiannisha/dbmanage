@@ -70,4 +70,38 @@ class Test(unittest.TestCase):
     def test_connect(self) -> None:
         """ Tests shellinter.connect """
 
-        # check return types
+        for test_case in self.test_cases:
+
+            fail = False
+            if test_case['host'] == 'fail_test':
+                fail = True
+
+            # checks to do for with non failing connections
+            if not fail:
+                connection = shellinter.connect(**test_case)
+
+                # check return type
+                self.assertEqual(Popen, type(connection))
+
+                # test that returned process has properly logged in
+                out_commands = {
+                    # commands to print some output on a temp file that is going to be checked
+                    'mysql' : r'\T temp\nshow databases;\n\q\n',
+                    'psql' : r'\o temp\nselect datname from pg_database;\n\q\n',
+                }
+
+                with open('temp', 'r', encoding='utf-8') as f:
+                    out_str = ''.join(line for line in f.readlines())
+
+                # TODO: add equal assertion and file removal
+                expected_out_str = {
+                    'psql' : rf'  datname  \n-----------\n postgres\n template1\n template0\n {getpass.getuser()}\n(4 rows)\n\n',
+                    'mysql': rf"""mmysql> show databases;\n+--------------------+\n| Database           |\n+--------------------+\n| information_schema |\n| mysql
+                                  |\n| performance_schema |\n| sys                |\n+--------------------+\n4 rows in set (0.01 sec)\n\nmysql> \\q\n""",
+                }
+
+            else:
+            # check raised expections
+            #TODO: add warnings for missing kwargs
+            #TODO: add stderr based expection raising
+                pass
