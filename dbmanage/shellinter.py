@@ -4,7 +4,7 @@
 import os
 import subprocess
 
-from query_utils import parse_connection_request
+from .query_utils import parse_connection_request
 
 # API
 
