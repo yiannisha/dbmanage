@@ -34,7 +34,7 @@ class Test(unittest.TestCase):
             {
             'host' : 'localhost',
             'port' : '5432', # default postgres port
-            'user' : f'{getpass.getuser()}',
+            'user' : f'{getpass.getuser()}', # default postgres username is user
             'dbname' : 'postgres',
             'pass' : '',
              },
@@ -43,7 +43,7 @@ class Test(unittest.TestCase):
             {
             'host' : 'fail_test',
             'port' : '5432', # default postgres port
-            'user' : f'{getpass.getuser()}',
+            'user' : f'{getpass.getuser()}', # default postgres username is user
             'dbname' : 'postgres',
             'pass' : '',
             },
@@ -52,7 +52,7 @@ class Test(unittest.TestCase):
             {
             'host' : 'localhost',
             'port' : '3306', # default mysql port
-            'user' : f'{getpass.getuser()}',
+            'user' : 'root', # default mysql username is root
             'dbname' : 'mysql',
             'pass' : f'{test_utils.get_pass("MYSQL_PASS")}',
             },
@@ -61,7 +61,7 @@ class Test(unittest.TestCase):
             {
             'host' : 'fail_test',
             'port' : '', # default mysql port
-            'user' : f'{getpass.getuser()}',
+            'user' : 'root', # default mysql username is root
             'dbname' : 'mysql',
             'pass' : '',
             }
@@ -78,27 +78,52 @@ class Test(unittest.TestCase):
 
             # checks to do for with non failing connections
             if not fail:
-                connection = shellinter.connect(**test_case)
+                dbname = test_case['dbname']
+                connection = shellinter.connect(dbname, **test_case)
 
                 # check return type
                 self.assertEqual(Popen, type(connection))
 
                 # test that returned process has properly logged in
+                temp_filename = 'temp'
                 out_commands = {
                     # commands to print some output on a temp file that is going to be checked
-                    'mysql' : r'\T temp\nshow databases;\n\q\n',
-                    'psql' : r'\o temp\nselect datname from pg_database;\n\q\n',
+                    'mysql' : bytes(f'\T {temp_filename}\nshow databases;\n\q\n', 'utf-8'),
+                    'postgres' : bytes(f'\o {temp_filename}\nselect datname from pg_database;\n\q\n', 'utf-8'),
                 }
 
-                with open('temp', 'r', encoding='utf-8') as f:
+                # execute out_command with connection and then kill process
+                connection.stdin.write(out_commands[dbname])
+                stdout, stderr = connection.communicate()
+
+                # wait for file to be generated
+                print(f'Waiting for {temp_filename} file...')
+                try:
+                    while(not os.path.exists(temp_filename)):
+                        pass
+                except KeyboardInterrupt:
+                    # print process stdout and stderr if no temp file is generated
+                    print('Process stdout: ', stdout)
+                    print('Process stderr: ', stderr)
+
+                with open(temp_filename, 'r', encoding='utf-8') as f:
                     out_str = ''.join(line for line in f.readlines())
 
-                # TODO: add equal assertion and file removal
+                #print('Output string from file:\n', out_str)
+
+                # delete file
+                if os.path.exists(temp_filename):
+                    os.remove(temp_filename)
+
                 expected_out_str = {
-                    'psql' : rf'  datname  \n-----------\n postgres\n template1\n template0\n {getpass.getuser()}\n(4 rows)\n\n',
-                    'mysql': rf"""mmysql> show databases;\n+--------------------+\n| Database           |\n+--------------------+\n| information_schema |\n| mysql
-                                  |\n| performance_schema |\n| sys                |\n+--------------------+\n4 rows in set (0.01 sec)\n\nmysql> \\q\n""",
+                    'postgres' : f'  datname  \n-----------\n postgres\n template1\n template0\n {getpass.getuser()}\n(4 rows)\n\n',
+                    #'mysql': f"""mysql> show databases;\n+--------------------+\n| Database           |\n+--------------------+\n| information_schema |\n| mysql
+                    #              |\n| performance_schema |\n| sys                |\n+--------------------+\n4 rows in set (0.01 sec)\n\nmysql> \\q\n""",
+                    'mysql' : 'Database\ninformation_schema\nmysql\nperformance_schema\nsys\n',
                 }
+
+                # check output saved to temp file
+                self.assertEqual(expected_out_str[dbname], out_str)
 
             else:
             # check raised expections
