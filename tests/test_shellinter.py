@@ -93,7 +93,7 @@ class Test(unittest.TestCase):
                 }
 
                 # execute out_command with connection and then kill process
-                connection.stdin.write(out_commands[dbname])
+                connection.stdin.write(out_commands[dbname]) # type: ignore
                 stdout, stderr = connection.communicate()
 
                 # wait for file to be generated
