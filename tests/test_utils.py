@@ -4,7 +4,7 @@
 import os
 import json
 
-def get_pass(pass_name : str):
+def get_pass(pass_name : str) -> str:
     """ Returns pass from test_credentials.json """
 
     creds_path = os.path.join(os.path.dirname(__file__), 'test_credentials.json')
