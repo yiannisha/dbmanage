@@ -24,4 +24,10 @@ def connect(dbtype: str, **kwargs) -> subprocess.Popen:
 
     return process
 
+def write_queries(process: subprocess.Popen, queries: list[str]) -> None:
+    """ Writes queries in process.stdin """
+
+    for query in queries:
+        process.stdin.write(bytes(query, 'utf-8')) # type: ignore
+
 # helper functions

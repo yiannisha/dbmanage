@@ -1,0 +1,4 @@
+id	name	age	gender
+1	Yiannis	19	male
+2	Friedrich Nietzsche	39	male
+3	Nataly	20	female

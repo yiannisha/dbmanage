@@ -114,15 +114,14 @@ class Test(unittest.TestCase):
             #TODO: add warnings for missing kwargs
             #TODO: add stderr based expection raising
                 pass
-
-    @unittest.skip
+    #@unittest.skip
     def test_write_queries(self) -> None:
         """ Tests shellinter.write_queries """
 
-        temp_filename = 'test'
+        temp_filename = 'temp'
         test_db = 'dbmanage_testdb'
         QUERIES = { # type: ignore
-            'postgre' : [
+            'postgres' : [
                 f'DROP DATABASE IF EXISTS {test_db};\n',  # drop databases from previous tests
                 f'CREATE DATABASE {test_db};\n',  # create a database
                 f'\c {test_db}\n',  # connect to database
@@ -144,13 +143,14 @@ class Test(unittest.TestCase):
                 """,
                 f'\o {temp_filename}\n',  # set up a file for stdout
                 'SELECT * FROM test;\n',  # select data from table and output to file
-                '\c postgres',  # connect to default database
+                f'\o\n',  # disable outfile
+                '\c postgres\n',  # connect to default database
                 f'DROP DATABASE {test_db};\n',  # drop database from this test
             ],
             'mysql' : [
                 f'DROP DATABASE IF EXISTS {test_db};\n',  # drop databases from previous tests
                 f'CREATE DATABASE {test_db};\n',  # create a database
-                fr'\r {test_db}\n',  # connect to database
+                f'\\r {test_db}\n',  # connect to database
 
                 # create a table
                 """CREATE TABLE test (
@@ -172,27 +172,26 @@ class Test(unittest.TestCase):
                 ("Nataly", 20, "female");\n
                 """,
 
-                fr'\T {temp_filename}\n',  # set up a file for stdout
+                f'\T {temp_filename}\n',  # set up a file for stdout
                 'SELECT * FROM test;\n',  # select data from table and output to file
-                'notee',  # disable outfile
-                '\r mysql',  # connect to default database
-                f'DROP DATABASE {test_db}\n',  # drop database from this test
+                'notee\n',  # disable outfile
+                '\\r mysql\n',  # connect to default database
+                f'DROP DATABASE {test_db};\n',  # drop database from this test
             ],
         }
 
         EXPECTED_OUTPUT = { # type: ignore
 
-            'postgre' : """ id |        name         | age | gender \n
-            ----+---------------------+-----+--------\n
-            1 | Yiannis             |  19 | male\n  2 | Friedrich Nietzsche |  39 | male\n
-            3 | Nataly              |  20 | female\n(3 rows)\n\n""", # data that was added to table
+            'postgres' : '', # data that was added to table
 
-            'mysql' : """mysql> SELECT * FROM test;\n+----+---------------------+------+--------+\n
-            | id | name                | age  | gender |\n+----+---------------------+------+--------+\n
-            |  1 | Yiannis             |   19 | male   |\n|  2 | Friedrich Nietzsche |   39 | male   |\n
-            |  3 | Nataly              |   20 | female |\n+----+---------------------+------+--------+\n
-            3 rows in set (0.00 sec)\n\nmysql> notee\n""", # data that was added to table
+            'mysql' : '', # data that was added to table
         }
+
+        for key in EXPECTED_OUTPUT.keys():
+            test_data_path = os.path.join('tests','testdata', f'write_queries_{key}_out.txt')
+
+            with open(test_data_path, 'r', encoding='utf-8') as f:
+                EXPECTED_OUTPUT[key] = ''.join(f.readlines())
 
         # create processes
         # if the tests have come this far it means that shellinter.connect works
@@ -208,6 +207,6 @@ class Test(unittest.TestCase):
 
         # check process output from temp file
             stdout, stderr = connection.communicate()
-            out_str = read_temp_file(temp_filename, stdout=stdout, stderr=stderr)
+            out_str = read_temp_file(temp_filename, delete=True, stdout=stdout, stderr=stderr)
 
             self.assertEqual(EXPECTED_OUTPUT[dbname], out_str)
