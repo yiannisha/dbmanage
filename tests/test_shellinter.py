@@ -36,7 +36,7 @@ class Test(unittest.TestCase):
             'port' : '5432', # default postgres port
             'user' : f'{getpass.getuser()}', # default postgres username is user
             'dbname' : 'postgres',
-            'pass' : '',
+            'passwd' : '',
              },
 
             #  postgresql failing test case
@@ -45,7 +45,7 @@ class Test(unittest.TestCase):
             'port' : '5432', # default postgres port
             'user' : f'{getpass.getuser()}', # default postgres username is user
             'dbname' : 'postgres',
-            'pass' : '',
+            'passwd' : '',
             },
 
             #  mysql test case
@@ -54,7 +54,7 @@ class Test(unittest.TestCase):
             'port' : '3306', # default mysql port
             'user' : 'root', # default mysql username is root
             'dbname' : 'mysql',
-            'pass' : f'{get_pass("MYSQL_PASS")}',
+            'passwd' : f'{get_pass("MYSQL_PASS")}',
             },
 
             #  mysql failing test case
@@ -63,7 +63,7 @@ class Test(unittest.TestCase):
             'port' : '', # default mysql port
             'user' : 'root', # default mysql username is root
             'dbname' : 'mysql',
-            'pass' : '',
+            'passwd' : '',
             }
         ]
 

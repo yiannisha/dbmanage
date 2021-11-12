@@ -1,6 +1,8 @@
 
 """ A module for query parsing utilities """
 
+from typing import Union
+
 # API
 
 def parse_connection_request(dbtype: str, **kwargs) -> str:
@@ -17,30 +19,30 @@ def parse_connection_request(dbtype: str, **kwargs) -> str:
 
 # helper functions
 
-def _parse_mysql_connection_request(**kwargs) -> str:
+def _parse_mysql_connection_request(host: str, user: str, dbname: str = '', passwd: str = '', **kwargs) -> str:
 
     base_cmd = ''
     try:
         pass_str = ''
-        if kwargs['pass']:
-            pass_str = f'-p{kwargs["pass"]}'
+        if passwd:
+            pass_str = f'-p{passwd}'
 
-        base_cmd = f'mysql -h {kwargs["host"]} -u {kwargs["user"]} {pass_str} {kwargs["dbname"]}\n'
+        base_cmd = f'mysql -h {host} -u {user} {pass_str} {dbname}\n'
     except KeyError as e:
         # TODO: properly handle missing args
         raise ValueError('')
 
     return base_cmd
 
-def _parse_psql_connection_request(**kwargs) -> str:
+def _parse_psql_connection_request(host: str, user: str, dbname: str = '', passwd: str = '', port: Union[int, str] = 5432 ) -> str:
 
     base_cmd = ''
     try:
         pass_str = ''
-        if kwargs['pass']:
-            pass_str = f'--password{kwargs["pass"]}'
+        if passwd:
+            pass_str = f'--password{passwd}'
 
-        base_cmd = f'psql -h {kwargs["host"]} -U {kwargs["user"]} -p {kwargs["port"]} {pass_str} {kwargs["dbname"]}\n'
+        base_cmd = f'psql -h {host} -U {user} -p {port} {pass_str} {dbname}\n'
     except KeyError as e:
         # TODO: properly handle missing args
         raise ValueError('')
