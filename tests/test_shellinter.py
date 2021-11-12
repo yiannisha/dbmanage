@@ -27,6 +27,8 @@ class Test(unittest.TestCase):
             with open(creds_path, 'w', encoding='utf-8') as file:
                 file.write(json.dumps({'PSQL_PASS': psql_pass, 'MYSQL_PASS': mysql_pass}))
 
+        # Initialize a connection variable to store every subprocess created during the test
+        self.connection: Popen
 
         # Setup test cases
         self.test_cases = [
@@ -67,6 +69,12 @@ class Test(unittest.TestCase):
             }
         ]
 
+    def tearDown(self):
+        """Runs when test are finished or have failed"""
+
+        # terminate any running processes
+        self.connection.communicate()
+
     def test_connect(self) -> None:
         """ Tests shellinter.connect """
 
@@ -79,10 +87,10 @@ class Test(unittest.TestCase):
             # checks to do for with non failing connections
             if not fail:
                 dbname = test_case['dbname']
-                connection = shellinter.connect(dbname, **test_case)
+                self.connection = shellinter.connect(dbname, **test_case)
 
                 # check return type
-                self.assertEqual(Popen, type(connection))
+                self.assertEqual(Popen, type(self.connection))
 
                 # test that returned process has properly logged in
                 temp_filename = 'temp'
@@ -93,8 +101,8 @@ class Test(unittest.TestCase):
                 }
 
                 # execute out_command with connection and then kill process
-                connection.stdin.write(out_commands[dbname]) # type: ignore
-                stdout, stderr = connection.communicate()
+                self.connection.stdin.write(out_commands[dbname]) # type: ignore
+                stdout, stderr = self.connection.communicate()
 
                 # read temp file
                 out_str = read_temp_file(filename=temp_filename, stdout=stdout, stderr=stderr)
@@ -200,13 +208,13 @@ class Test(unittest.TestCase):
 
         for test_case in localTest_cases:
             dbname = test_case['dbname']
-            connection = shellinter.connect(dbname, **test_case)
+            self.connection = shellinter.connect(dbname, **test_case)
 
         # test input to processes
-            shellinter.write_queries(connection, QUERIES[dbname])
+            shellinter.write_queries(self.connection, QUERIES[dbname])
 
         # check process output from temp file
-            stdout, stderr = connection.communicate()
+            stdout, stderr = self.connection.communicate()
             out_str = read_temp_file(temp_filename, delete=True, stdout=stdout, stderr=stderr)
 
             self.assertEqual(EXPECTED_OUTPUT[dbname], out_str)
