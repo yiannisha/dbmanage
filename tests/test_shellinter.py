@@ -9,7 +9,7 @@ import json
 from subprocess import Popen
 
 import unittest
-from tests import test_utils
+from tests.test_utils import get_pass, read_temp_file
 
 
 
@@ -54,7 +54,7 @@ class Test(unittest.TestCase):
             'port' : '3306', # default mysql port
             'user' : 'root', # default mysql username is root
             'dbname' : 'mysql',
-            'pass' : f'{test_utils.get_pass("MYSQL_PASS")}',
+            'pass' : f'{get_pass("MYSQL_PASS")}',
             },
 
             #  mysql failing test case
@@ -96,24 +96,8 @@ class Test(unittest.TestCase):
                 connection.stdin.write(out_commands[dbname]) # type: ignore
                 stdout, stderr = connection.communicate()
 
-                # wait for file to be generated
-                print(f'Waiting for {temp_filename} file...')
-                try:
-                    while(not os.path.exists(temp_filename)):
-                        pass
-                except KeyboardInterrupt:
-                    # print process stdout and stderr if no temp file is generated
-                    print('Process stdout: ', stdout)
-                    print('Process stderr: ', stderr)
-
-                with open(temp_filename, 'r', encoding='utf-8') as f:
-                    out_str = ''.join(line for line in f.readlines())
-
-                #print('Output string from file:\n', out_str)
-
-                # delete file
-                if os.path.exists(temp_filename):
-                    os.remove(temp_filename)
+                # read temp file
+                out_str = read_temp_file(filename=temp_filename, stdout=stdout, stderr=stderr)
 
                 expected_out_str = {
                     'postgres' : f'  datname  \n-----------\n postgres\n template1\n template0\n {getpass.getuser()}\n(4 rows)\n\n',
@@ -130,3 +114,100 @@ class Test(unittest.TestCase):
             #TODO: add warnings for missing kwargs
             #TODO: add stderr based expection raising
                 pass
+
+    @unittest.skip
+    def test_write_queries(self) -> None:
+        """ Tests shellinter.write_queries """
+
+        temp_filename = 'test'
+        test_db = 'dbmanage_testdb'
+        QUERIES = { # type: ignore
+            'postgre' : [
+                f'DROP DATABASE IF EXISTS {test_db};\n',  # drop databases from previous tests
+                f'CREATE DATABASE {test_db};\n',  # create a database
+                f'\c {test_db}\n',  # connect to database
+
+                # create a table
+                """CREATE TABLE test(
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    age INTEGER,
+                    gender TEXT
+                );\n""",
+
+                # add data to table
+                """
+                INSERT INTO test (name, age, gender)
+                VALUES ('Yiannis', 19, 'male'),
+                       ('Friedrich Nietzsche', 39, 'male'),
+                       ('Nataly', 20, 'female');\n
+                """,
+                f'\o {temp_filename}\n',  # set up a file for stdout
+                'SELECT * FROM test;\n',  # select data from table and output to file
+                '\c postgres',  # connect to default database
+                f'DROP DATABASE {test_db};\n',  # drop database from this test
+            ],
+            'mysql' : [
+                f'DROP DATABASE IF EXISTS {test_db};\n',  # drop databases from previous tests
+                f'CREATE DATABASE {test_db};\n',  # create a database
+                fr'\r {test_db}\n',  # connect to database
+
+                # create a table
+                """CREATE TABLE test (
+                    id INT AUTO_INCREMENT,
+                    name TEXT NOT NULL,
+                    age INT,
+                    gender TEXT,
+                    PRIMARY KEY (id))
+                    ENGINE = InnoDB;\n
+                    """,
+
+                # add data to the table
+                """
+                INSERT INTO
+                test (name, age, gender)
+                VALUES
+                ("Yiannis", 19, "male"),
+                ("Friedrich Nietzsche", 39, "male"),
+                ("Nataly", 20, "female");\n
+                """,
+
+                fr'\T {temp_filename}\n',  # set up a file for stdout
+                'SELECT * FROM test;\n',  # select data from table and output to file
+                'notee',  # disable outfile
+                '\r mysql',  # connect to default database
+                f'DROP DATABASE {test_db}\n',  # drop database from this test
+            ],
+        }
+
+        EXPECTED_OUTPUT = { # type: ignore
+
+            'postgre' : """ id |        name         | age | gender \n
+            ----+---------------------+-----+--------\n
+            1 | Yiannis             |  19 | male\n  2 | Friedrich Nietzsche |  39 | male\n
+            3 | Nataly              |  20 | female\n(3 rows)\n\n""", # data that was added to table
+
+            'mysql' : """mysql> SELECT * FROM test;\n+----+---------------------+------+--------+\n
+            | id | name                | age  | gender |\n+----+---------------------+------+--------+\n
+            |  1 | Yiannis             |   19 | male   |\n|  2 | Friedrich Nietzsche |   39 | male   |\n
+            |  3 | Nataly              |   20 | female |\n+----+---------------------+------+--------+\n
+            3 rows in set (0.00 sec)\n\nmysql> notee\n""", # data that was added to table
+        }
+
+        # create processes
+        # if the tests have come this far it means that shellinter.connect works
+        # properly so I can use it
+        localTest_cases = [test for test in self.test_cases if test['host'] != 'fail_test']
+
+        for test_case in localTest_cases:
+            dbname = test_case['dbname']
+            connection = shellinter.connect(dbname, **test_case)
+
+        # test input to processes
+            shellinter.write_queries(connection, QUERIES[dbname])
+
+        # check process output from temp file
+            stdout, stderr = connection.communicate()
+            out_str = read_temp_file(temp_filename, stdout=stdout, stderr=stderr)
+
+            self.assertEqual(EXPECTED_OUTPUT[dbname], out_str)
