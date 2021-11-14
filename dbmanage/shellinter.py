@@ -46,12 +46,12 @@ def write_queries(process: subprocess.Popen, queries: list[str]) -> None:
 def _get_stderr(filepath: str) -> str:
     """ Checks file for error messages """
 
-    # wait until error file is generated
-    #while(not os.path.exists(filepath)):
-    #    pass
-
     # TEMPORARY SOLUTION
-    time.sleep(.018)
+    time.sleep(.02)
+
+    # wait until error file is generated
+    while(not os.path.exists(filepath)):
+        pass
 
     error_msg = ''
     if os.path.exists(filepath):
