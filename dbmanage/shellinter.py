@@ -41,6 +41,11 @@ def write_queries(process: subprocess.Popen, queries: list[str]) -> None:
     for query in queries:
         process.stdin.write(bytes(query, 'utf-8')) # type: ignore
 
+def commit(process: subprocess.Popen) -> None:
+    """ Simply writes commit to end a transaction """
+
+    process.stdin.write(b'COMMIT\n')
+
 # helper functions
 
 def _get_stderr(filepath: str) -> str:
