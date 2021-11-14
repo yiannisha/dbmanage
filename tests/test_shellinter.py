@@ -73,55 +73,68 @@ class Test(unittest.TestCase):
         """Runs when test are finished or have failed"""
 
         # terminate any running processes
-        self.connection.communicate()
+        try:
+            self.connection.communicate()
+        except AttributeError:
+            pass
 
     def test_connect(self) -> None:
-        """ Tests shellinter.connect """
+        """ Tests shellinter.connect with non-failing test cases """
 
         for test_case in self.test_cases:
 
-            fail = False
+            # skip failing test cases
             if test_case['host'] == 'fail_test':
-                fail = True
+                continue
 
-            # checks to do for with non failing connections
-            if not fail:
-                dbname = test_case['dbname']
-                self.connection = shellinter.connect(dbname, **test_case)
+            dbname = test_case['dbname']
+            self.connection = shellinter.connect(dbname, **test_case)
 
-                # check return type
-                self.assertEqual(Popen, type(self.connection))
+            # check return type
+            self.assertEqual(Popen, type(self.connection))
 
-                # test that returned process has properly logged in
-                temp_filename = 'temp'
-                out_commands = {
-                    # commands to print some output on a temp file that is going to be checked
-                    'mysql' : bytes(f'\T {temp_filename}\nshow databases;\n\q\n', 'utf-8'),
-                    'postgres' : bytes(f'\o {temp_filename}\nselect datname from pg_database;\n\q\n', 'utf-8'),
-                }
+            # test that returned process has properly logged in
+            temp_filename = 'temp'
+            out_commands = {
+                # commands to print some output on a temp file that is going to be checked
+                'mysql' : bytes(f'\T {temp_filename}\nshow databases;\n\q\n', 'utf-8'),
+                'postgres' : bytes(f'\o {temp_filename}\nselect datname from pg_database;\n\q\n', 'utf-8'),
+            }
 
-                # execute out_command with connection and then kill process
-                self.connection.stdin.write(out_commands[dbname]) # type: ignore
-                stdout, stderr = self.connection.communicate()
+            # execute out_command with connection and then kill process
+            self.connection.stdin.write(out_commands[dbname]) # type: ignore
+            stdout, stderr = self.connection.communicate()
 
-                # read temp file
-                out_str = read_temp_file(filename=temp_filename, stdout=stdout, stderr=stderr)
+            # read temp file
+            out_str = read_temp_file(filename=temp_filename, stdout=stdout, stderr=stderr)
 
-                expected_out_str = {
-                    'postgres' : f'  datname  \n-----------\n postgres\n template1\n template0\n {getpass.getuser()}\n(4 rows)\n\n',
-                    #'mysql': f"""mysql> show databases;\n+--------------------+\n| Database           |\n+--------------------+\n| information_schema |\n| mysql
-                    #              |\n| performance_schema |\n| sys                |\n+--------------------+\n4 rows in set (0.01 sec)\n\nmysql> \\q\n""",
-                    'mysql' : 'Database\ninformation_schema\nmysql\nperformance_schema\nsys\n',
-                }
+            expected_out_str = {
+                'postgres' : f'  datname  \n-----------\n postgres\n template1\n template0\n {getpass.getuser()}\n(4 rows)\n\n',
+                #'mysql': f"""mysql> show databases;\n+--------------------+\n| Database           |\n+--------------------+\n| information_schema |\n| mysql
+                #              |\n| performance_schema |\n| sys                |\n+--------------------+\n4 rows in set (0.01 sec)\n\nmysql> \\q\n""",
+                'mysql' : 'Database\ninformation_schema\nmysql\nperformance_schema\nsys\n',
+            }
 
-                # check output saved to temp file
-                self.assertEqual(expected_out_str[dbname], out_str)
+            # check output saved to temp file
+            self.assertEqual(expected_out_str[dbname], out_str)
 
-            else:
+    def test_connect_fail(self) -> None:
+        """ Tests shellinter.connect with failing test cases """
+
+        for test_case in self.test_cases:
+
+            # skip non-failing test cases
+            if(test_case['host'] != 'fail_test'):
+                continue
+            dbname = test_case['dbname']
             # check raised expections
-            #TODO: add warnings for missing kwargs
-            #TODO: add stderr based expection raising
-                pass
+            #TODO: Checking for stderr currently uses fixed time to wait for a file
+            #      This is very bad because connection can take a variable ammount of
+            #      time. A solution could be making a test connection before making
+            #      the actual one.
+            with self.assertRaises(ConnectionRefusedError):
+                fail_connection = shellinter.connect(dbname, **test_case)
+
     #@unittest.skip
     def test_write_queries(self) -> None:
         """ Tests shellinter.write_queries """
@@ -208,6 +221,12 @@ class Test(unittest.TestCase):
 
         for test_case in localTest_cases:
             dbname = test_case['dbname']
+
+            try:
+                self.connection.communicate()
+            except AttributeError:
+                pass
+
             self.connection = shellinter.connect(dbname, **test_case)
 
         # test input to processes
