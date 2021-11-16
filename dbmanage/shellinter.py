@@ -44,7 +44,7 @@ def write_queries(process: subprocess.Popen, queries: list[str]) -> None:
 def commit(process: subprocess.Popen) -> None:
     """ Simply writes commit to end a transaction """
 
-    process.stdin.write(b'COMMIT\n')
+    process.stdin.write(b'COMMIT\n') # type: ignore
 
 # helper functions
 
