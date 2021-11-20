@@ -52,7 +52,7 @@ def _get_stderr(filepath: str) -> str:
     """ Checks file for error messages """
 
     # TEMPORARY SOLUTION
-    time.sleep(.02)
+    time.sleep(.03)
 
     # wait until error file is generated
     while(not os.path.exists(filepath)):
