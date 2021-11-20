@@ -39,12 +39,12 @@ def _parse_psql_connection_request(host: str, user: str, dbname: str = '', passw
     base_cmd = ''
     pass_str = ''
     if passwd:
-        pass_str = f'--password{passwd}'
+        pass_str = f'PGPASSWORD={passwd}'
 
     ERRFILE = ''
     if kwargs['stderr']:
         ERRFILE = f'2>{kwargs["stderr"]}'
 
-    base_cmd = f'psql -h {host} -U {user} -p {port} {pass_str} {dbname} {ERRFILE}\n'
+    base_cmd = f'{pass_str} psql -h {host} -U {user} -p {port} {dbname} {ERRFILE}\n'
 
     return base_cmd

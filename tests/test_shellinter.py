@@ -6,7 +6,7 @@ from dbmanage import shellinter
 import os
 import getpass
 import json
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
 import unittest
 from tests.test_utils import get_pass, read_temp_file
@@ -237,3 +237,18 @@ class Test(unittest.TestCase):
             out_str = read_temp_file(temp_filename, delete=True, stdout=stdout, stderr=stderr)
 
             self.assertEqual(EXPECTED_OUTPUT[dbname], out_str)
+
+    def test_commit(self) -> None:
+        """ Tests shellinter.commit """
+
+        # create a process
+        self.connection = Popen('/bin/bash', stdout=PIPE, stdin=PIPE,
+                                            bufsize=10)
+        self.connection.stdin.write(b'echo ') # type: ignore
+
+        # test that output is 'commit'
+        shellinter.commit(self.connection)
+        stdout, _ = self.connection.communicate()
+        stdout = stdout.decode('utf-8').strip().lower()
+
+        self.assertEqual(stdout, 'commit')

@@ -21,13 +21,13 @@ def connect(dbtype: str, **kwargs) -> subprocess.Popen:
     cmd = parse_connection_request(dbtype, stderr=stderr_out, **kwargs)
 
     # debug
-    print(cmd)
+    #print(cmd)
 
     process.stdin.write(bytes(cmd, 'utf-8')) # type: ignore
 
     # get stderr from errtemp file
     error_msg = _get_stderr(stderr_out)
-    print(error_msg)
+    #print(error_msg)
     if error_msg:
         process.communicate()
         raise ConnectionRefusedError(error_msg)
@@ -41,13 +41,18 @@ def write_queries(process: subprocess.Popen, queries: list[str]) -> None:
     for query in queries:
         process.stdin.write(bytes(query, 'utf-8')) # type: ignore
 
+def commit(process: subprocess.Popen) -> None:
+    """ Simply writes commit to end a transaction """
+
+    process.stdin.write(b'COMMIT\n') # type: ignore
+
 # helper functions
 
 def _get_stderr(filepath: str) -> str:
     """ Checks file for error messages """
 
     # TEMPORARY SOLUTION
-    time.sleep(.02)
+    time.sleep(.03)
 
     # wait until error file is generated
     while(not os.path.exists(filepath)):
@@ -61,8 +66,6 @@ def _get_stderr(filepath: str) -> str:
             line for line in errlines
             if re.search('error', line.lower())
         ])
-        print(error_msg)
-        print(errlines)
 
     # remove file
     if os.path.exists(filepath):
