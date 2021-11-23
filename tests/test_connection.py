@@ -3,6 +3,7 @@
 
 from dbmanage.connection import PostgresConnection, MysqlConnection
 
+import os
 import getpass
 from subprocess import Popen
 
@@ -39,6 +40,32 @@ class Test(unittest.TestCase):
         """ Terminate remaining processes """
 
         self.test_kill()
+
+    def test_readStdout(self) -> None:
+        """ Tests Connection._readStdout """
+
+        expected_output = {
+            'postgres' : {
+                'column' : ['id', 'name', 'age'],
+                'type' : ['integer', 'text', 'integer'],
+                'collation' : [None, None, None],
+                'nullable' : ['not null', 'not null', None],
+                'default' : ["nextval('test_id_seq'::regclass)", None, None],
+                'extra' : ['Indexes:', '"test_pkey" PRIMARY KEY, btree (id)'],
+            },
+
+            'mysql' : {},
+        }
+
+        # postgres test
+        with self.assertRaises(FileNotFoundError):
+            self.postgresConnection._readStdout('fail/file')
+
+        testfile = os.path.join('tests', 'testdata', 'read_table_info_psql.txt')
+        result = self.postgresConnection._readStdout(testfile)
+        self.assertEqual(expected_output['postgres'], result)
+
+        # mysql test
 
     def test_kill(self) -> None:
         """ Tests Connection.kill """

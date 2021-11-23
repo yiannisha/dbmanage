@@ -1,0 +1,7 @@
+ id |        name        | age 
+----+--------------------+-----
+  0 | Yiannis            |  19
+  1 | Natalia            |  20
+  2 | Friedrich Neitzche |  33
+(3 rows)
+
