@@ -9,6 +9,8 @@ import subprocess
 
 from typing import Union, List, Dict
 
+ColumnDict = Dict[str, List[str]]
+
 class PostgresConnection():
     """ Class that handles interaction between user and PostgreSQL database server """
 
@@ -32,19 +34,13 @@ class PostgresConnection():
     #    """ Return a list of Database objects that represent the databases in the server """
     #    pass
 
-    def _readStdout(self, *args, **kwargs) -> Dict:
+    def _readStdout(self, *args, **kwargs) -> ColumnDict:
         """
         Returns a dictionary with the columns of the output as dictionary keys
         and the values of each row as elements in a list as dictionary values
         """
 
-        initial_dict = self._readrows(*args, **kwargs)
-
-        # TODO: format strings into the appropriate dictionary
-
-        print('columns:', initial_dict['column'])
-        print('rows', initial_dict['row'])
-        print("Extra:", initial_dict['extra'])
+        return self._untabulate(self._readrows(*args, **kwargs))
 
     def _readrows(self, filepath: str, extra: bool = True) -> Dict:
         """
@@ -82,8 +78,8 @@ class PostgresConnection():
 
             # get extra stuff
             if extra:
-                extra_strs.append(line)
-                extra_strs.extend([line.strip() for line in f.readlines()])
+                extra_strs.append(line.strip())
+                extra_strs.extend([line.strip() for line in f.readlines() if line.strip()])
 
         return {
             'column' : column_str,
@@ -95,6 +91,33 @@ class PostgresConnection():
         """ Returns True if the line passed is a valid row of output """
         regex = '.*\|'
         return bool(re.search(regex, line))
+
+    def _untabulate(self, row_dict: Dict) -> ColumnDict:
+        """
+        Returns a dictionary with columns as keys and row data as values
+        by formatting row strings.
+
+        :param row_dict: a dictionary with row strings
+        """
+
+        columns = [column.strip().lower() for column in row_dict['column'].split('|')]
+        columnDict = {key: [] for key in columns}
+
+        for row in row_dict['row']:
+            rowdata = [data.strip().lower() for data in row.split('|')]
+            for data, column in zip(rowdata, columns):
+                if data:
+                    columnDict[column].append(data)
+                else:
+                    columnDict[column].append(None)
+
+        try:
+            columnDict['extra'] = row_dict['extra']
+        except KeyError:
+            pass
+
+        return columnDict
+
 
 class MysqlConnection(PostgresConnection):
     """ Class that handles interaction between user and MySQL database server """
