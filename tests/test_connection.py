@@ -54,7 +54,14 @@ class Test(unittest.TestCase):
                 'extra' : ['Indexes:', '"test_pkey" PRIMARY KEY, btree (id)'],
             },
 
-            'mysql' : {},
+            'mysql' : {
+                'field' : ['id', 'name', 'age'],
+                'type' : ['int', 'text', 'int'],
+                'null' : ['no', 'no', 'yes'],
+                'key' : ['pri', None, None],
+                'default' : ['null', 'null', 'null'],
+                'extra' : ['auto_increment', None, None],
+            },
         }
 
         # postgres test
@@ -66,6 +73,13 @@ class Test(unittest.TestCase):
         self.assertEqual(expected_output['postgres'], result)
 
         # mysql test
+        with self.assertRaises(FileNotFoundError):
+            self.mysqlConnection._readStdout('fail/file')
+
+        testfile = os.path.join('tests', 'testdata', 'read_table_info_mysql.txt')
+        result = self.mysqlConnection._readStdout(testfile)
+        print(result)
+        self.assertEqual(expected_output['mysql'], result)
 
     def test_kill(self) -> None:
         """ Tests Connection.kill """

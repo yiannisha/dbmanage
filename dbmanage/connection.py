@@ -11,10 +11,10 @@ from typing import Union, List, Dict
 
 ColumnDict = Dict[str, List[str]]
 
-class PostgresConnection():
-    """ Class that handles interaction between user and PostgreSQL database server """
+class Connection():
+    """ TODO: add documentation """
 
-    dbtype = 'postgres'
+    dbtype = ''
 
     def __init__(self, host: str, user: str, dbname: str = '', passwd: str = '',
                  port: Union[int, str] = 5432, **kwargs) -> None:
@@ -62,7 +62,6 @@ class PostgresConnection():
             extra_strs = []
 
             # read column line
-            i=0
             column_str = f.readline()
             while not self._isrow(column_str):
                 column_str = f.readline()
@@ -100,16 +99,30 @@ class PostgresConnection():
         :param row_dict: a dictionary with row strings
         """
 
-        columns = [column.strip().lower() for column in row_dict['column'].split('|')]
-        columnDict = {key: [] for key in columns}
+        columns = [
+            column[1:].strip().lower() for column in row_dict['column'].split('|')
+            if len(column.strip()) > 0 # no null names as columns
+            ]
+        columnDict = {key: [] for key in columns} # type: ignore
 
         for row in row_dict['row']:
-            rowdata = [data.strip().lower() for data in row.split('|')]
+            rowdata = [data.strip().lower() for data in row.split('|') if len(data) > 0]
             for data, column in zip(rowdata, columns):
                 if data:
                     columnDict[column].append(data)
                 else:
                     columnDict[column].append(None)
+
+        return columnDict
+
+class PostgresConnection(Connection):
+    """ Class that handles interaction between user and PostgreSQL database server """
+
+    dbtype = 'postgres'
+
+    def _untabulate(self, row_dict: Dict) -> ColumnDict:
+
+        columnDict = super()._untabulate(row_dict)
 
         try:
             columnDict['extra'] = row_dict['extra']
@@ -118,8 +131,7 @@ class PostgresConnection():
 
         return columnDict
 
-
-class MysqlConnection(PostgresConnection):
+class MysqlConnection(Connection):
     """ Class that handles interaction between user and MySQL database server """
 
     dbtype = 'mysql'
