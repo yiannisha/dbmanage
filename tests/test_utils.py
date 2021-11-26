@@ -4,6 +4,8 @@
 import os
 import json
 
+TESTDATADIR = os.path.join(os.path.dirname(__file__), 'testdata')
+
 def get_pass(pass_name : str) -> str:
     """ Returns pass from test_credentials.json """
 
