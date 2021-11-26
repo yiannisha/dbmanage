@@ -1,0 +1,11 @@
+mysql> select * from test;
++----+--------------------+------+
+| id | name               | age  |
++----+--------------------+------+
+|  1 | Yiannis            |   19 |
+|  2 | Natali             |   20 |
+|  3 | Friedrich Neitzche |   33 |
++----+--------------------+------+
+3 rows in set (0.00 sec)
+
+mysql> notee
