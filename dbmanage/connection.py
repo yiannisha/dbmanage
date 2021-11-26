@@ -80,11 +80,16 @@ class Connection():
                 extra_strs.append(line.strip())
                 extra_strs.extend([line.strip() for line in f.readlines() if line.strip()])
 
-        return {
-            'column' : column_str,
-            'row' : row_strs,
-            'extra' : extra_strs,
-        }
+                return {
+                    'column' : column_str,
+                    'row' : row_strs,
+                    'extra' : extra_strs,
+                }
+
+            return {
+                'column' : column_str,
+                'row' : row_strs,
+            }
 
     def _isrow(self, line: str) -> bool:
         """ Returns True if the line passed is a valid row of output """
