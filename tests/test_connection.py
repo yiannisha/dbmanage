@@ -8,7 +8,7 @@ import getpass
 from subprocess import Popen
 
 import unittest
-from tests.test_utils import get_pass
+from tests.test_utils import TESTDATADIR, get_pass
 
 class Test(unittest.TestCase):
 
@@ -44,42 +44,91 @@ class Test(unittest.TestCase):
     def test_readStdout(self) -> None:
         """ Tests Connection._readStdout """
 
-        expected_output = {
-            'postgres' : {
-                'column' : ['id', 'name', 'age'],
-                'type' : ['integer', 'text', 'integer'],
-                'collation' : [None, None, None],
-                'nullable' : ['not null', 'not null', None],
-                'default' : ["nextval('test_id_seq'::regclass)", None, None],
-                'extra' : ['Indexes:', '"test_pkey" PRIMARY KEY, btree (id)'],
-            },
+        testcases = {
 
-            'mysql' : {
-                'field' : ['id', 'name', 'age'],
-                'type' : ['int', 'text', 'int'],
-                'null' : ['no', 'no', 'yes'],
-                'key' : ['pri', None, None],
-                'default' : ['null', 'null', 'null'],
-                'extra' : ['auto_increment', None, None],
+            # postgresql testcases
+            'postgres' : [
+            {
+                # expected output
+                'output' : {
+                    'column' : ['id', 'name', 'age'],
+                    'type' : ['integer', 'text', 'integer'],
+                    'collation' : [None, None, None],
+                    'nullable' : ['not null', 'not null', None],
+                    'default' : ["nextval('test_id_seq'::regclass)", None, None],
+                    'extra' : ['Indexes:', '"test_pkey" PRIMARY KEY, btree (id)'],
+                },
+                # get extra lines
+                'extra' : True,
+                # file to read
+                'filepath' : os.path.join(TESTDATADIR, 'read_table_info_psql.txt')
             },
+            {
+                # expected output
+                'output' : {
+                    'id' : ['0', '1', '2'],
+                    'name' : ['yiannis', 'natalia', 'friedrich neitzche'],
+                    'age' : ['19', '20', '33'],
+                },
+                # get extra lines
+                'extra' : False,
+                # file to read
+                'filepath' : os.path.join(TESTDATADIR, 'tabledata_psql.txt'),
+            },
+            ],
+
+            # mysql testcases
+            'mysql' : [
+            {
+                # expected output
+                'output' : {
+                    'field' : ['id', 'name', 'age'],
+                    'type' : ['int', 'text', 'int'],
+                    'null' : ['no', 'no', 'yes'],
+                    'key' : ['pri', None, None],
+                    'default' : ['null', 'null', 'null'],
+                    'extra' : ['auto_increment', None, None],
+                },
+                # get extra lines
+                'extra' : True,
+                # file to read
+                'filepath' : os.path.join(TESTDATADIR, 'read_table_info_mysql.txt')
+            },
+            {
+                # expected output
+                'output' : {
+                    'id' : ['1', '2', '3'],
+                    'name' : ['yiannis', 'natali', 'friedrich neitzche'],
+                    'age' : ['19', '20', '33'],
+                },
+                # get extra lines
+                'extra' : False,
+                # file to read
+                'filepath' : os.path.join(TESTDATADIR, 'tabledata_mysql.txt')
+            },
+            ],
         }
 
-        # postgres test
-        with self.assertRaises(FileNotFoundError):
-            self.postgresConnection._readStdout('fail/file')
+        # run tests
+        failingpath = 'fail/file'
 
-        testfile = os.path.join('tests', 'testdata', 'read_table_info_psql.txt')
-        result = self.postgresConnection._readStdout(testfile)
-        self.assertEqual(expected_output['postgres'], result)
+        # postgresql tests
+        for test in testcases['postgres']:
+
+            with self.assertRaises(FileNotFoundError):
+                self.postgresConnection._readStdout(failingpath)
+
+            result = self.postgresConnection._readStdout(test['filepath'], extra=test['extra'])
+            self.assertEqual(test['output'], result)
 
         # mysql test
-        with self.assertRaises(FileNotFoundError):
-            self.mysqlConnection._readStdout('fail/file')
+        for test in testcases['mysql']:
 
-        testfile = os.path.join('tests', 'testdata', 'read_table_info_mysql.txt')
-        result = self.mysqlConnection._readStdout(testfile)
-        print(result)
-        self.assertEqual(expected_output['mysql'], result)
+            with self.assertRaises(FileNotFoundError):
+                self.mysqlConnection._readStdout(failingpath)
+
+            result = self.mysqlConnection._readStdout(test['filepath'], extra=test['extra'])
+            self.assertEqual(test['output'], result)
 
     def test_kill(self) -> None:
         """ Tests Connection.kill """
