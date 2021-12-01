@@ -3,9 +3,7 @@
 
 from typing import List, Dict
 
-Columns = Dict[
-    name: Dict[name: str, type: str],
-]
+ColumnDict = Dict[str, List[str]]
 
 class Table():
 
@@ -17,8 +15,11 @@ class Table():
         self.name = name
         self.parent = parentdb
 
-        #self.columns = self.get_columns()
+        self.columns = self.get_columns()
 
-    #def get_columns(self) -> Columns:
-    #    """ Returns a dictionary with column names and types """
-    #    pass
+    def get_columns(self) -> ColumnDict:
+        """ Returns a dictionary with column names and types """
+
+        columns: ColumnDict
+        columns = dict()
+        return columns

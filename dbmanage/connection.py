@@ -2,6 +2,7 @@
 """ A module for the Connection Classes """
 
 from dbmanage import shellinter
+from dbmanage.database import Database
 
 import os
 import re
@@ -23,16 +24,19 @@ class Connection():
         self._connection = shellinter.connect(dbtype=self.dbtype, host=host, user=user, dbname=dbname, passwd=passwd, port=port, **kwargs)
         self.terminated = False
 
-        #self.databases = self.get_databases()
+        self.databases = self.get_databases()
 
     def kill(self) -> None:
         """ Terminates connection to server """
         self._connection.communicate()
         self.terminated = True
 
-    #def get_databases(self) -> List[Database]:
-    #    """ Return a list of Database objects that represent the databases in the server """
-    #    pass
+    def get_databases(self) -> List[Database]:
+        """ Return a list of Database objects that represent the databases in the server """
+
+        databases: List[Database]
+        databases = []
+        return databases
 
     def _readStdout(self, *args, **kwargs) -> ColumnDict:
         """
@@ -44,7 +48,7 @@ class Connection():
 
     def _readrows(self, filepath: str, extra: bool = True) -> Dict:
         """
-        Returns a dictionary with the "column", "row", "extra" as keys
+        Returns a dictionary with "column", "row", "extra" as keys
         and the lines of the file that contain each one as dictionary values.
 
         This function is to be called in self._readStdout and this code was
