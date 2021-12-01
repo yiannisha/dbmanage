@@ -1,2 +1,2 @@
 # DBmanage
-A single python library to manage all of your databases.
+A single python library to manage PostgreSQL and MySQL databases.
