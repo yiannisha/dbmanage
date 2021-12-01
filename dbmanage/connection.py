@@ -14,7 +14,10 @@ from typing import Union, List, Dict
 ColumnDict = Dict[str, List[str]]
 
 class Connection():
-    """ TODO: add documentation """
+    """
+    Abstract Object to handle interaction between user and a database server.
+    This class is to be used only for inheritance.
+    """
 
     dbtype = ''
 
